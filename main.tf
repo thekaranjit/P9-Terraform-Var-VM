@@ -1,6 +1,6 @@
 
 resource "azurerm_resource_group" "example" {
-  name     = "terraformlab-rg"
+  name     = var.resource_group_name
   location = "West US"
 
   tags = {
@@ -10,7 +10,7 @@ resource "azurerm_resource_group" "example" {
 
 # Virtual Network Resource
 resource "azurerm_virtual_network" "main" {
-  name                = "terraformlab-vnet"
+  name                = "terraformlab-vnet2"
   address_space       = ["10.0.0.0/16"]
   location            = azurerm_resource_group.example.location
   resource_group_name = azurerm_resource_group.example.name
@@ -34,7 +34,7 @@ resource "azurerm_subnet" "example2" {
 
 # Public IP Resource
 resource "azurerm_public_ip" "example" {
-  name                = "terraformlab-pip"
+  name                = "terraformlab-pip2"
   resource_group_name = azurerm_resource_group.example.name
   location            = azurerm_resource_group.example.location
   allocation_method   = "Static"
@@ -47,12 +47,12 @@ resource "azurerm_public_ip" "example" {
 
 # Network Interface Resource
 resource "azurerm_network_interface" "example" {
-  name                = "terraformlab-nic"
+  name                = "terraformlab-nic2"
   location            = azurerm_resource_group.example.location
   resource_group_name = azurerm_resource_group.example.name
 
   ip_configuration {
-    name                          = "testconfiguration"
+    name                          = "testconfiguration2"
     subnet_id                     = azurerm_subnet.example1.id
     private_ip_address_allocation = "Dynamic"
     public_ip_address_id          = azurerm_public_ip.example.id
@@ -65,12 +65,12 @@ resource "azurerm_network_interface" "example" {
 
 # Network Security Group Resource
 resource "azurerm_network_security_group" "example" {
-  name                = "terraformlab-nsg"
+  name                = "terraformlab-nsg2"
   location            = azurerm_resource_group.example.location
   resource_group_name = azurerm_resource_group.example.name
 
   security_rule {
-    name                       = "test123"
+    name                       = "Alow-SSHPort"
     priority                   = 100
     direction                  = "Inbound"
     access                     = "Allow"
@@ -95,51 +95,28 @@ resource "azurerm_network_interface_security_group_association" "example" {
 
 # Virtual Machine Resource
 
-resource "azurerm_virtual_machine" "main" {
-  name                  = "terraformlab-vm"
-  location              = azurerm_resource_group.example.location
-  resource_group_name   = azurerm_resource_group.example.name
-  network_interface_ids = [azurerm_network_interface.example.id]
-  vm_size               = "Standard_B1ls"
+resource "azurerm_linux_virtual_machine" "example" {
+  name                = "terraform-lab-linux-machine2"
+  resource_group_name = azurerm_resource_group.example.name
+  location            = azurerm_resource_group.example.location
+  size                = "Standard_F2"
+  admin_username      = "adminuser"
+  admin_password = "Alliswell@14"
+  disable_password_authentication = false
+  network_interface_ids = [
+    azurerm_network_interface.example.id,
+  ]
 
-  # Uncomment this line to delete the OS disk automatically when deleting the VM
-  # delete_os_disk_on_termination = true
 
-  # Uncomment this line to delete the data disks automatically when deleting the VM
-  # delete_data_disks_on_termination = true
+  os_disk {
+    caching              = "ReadWrite"
+    storage_account_type = "Standard_LRS"
+  }
 
-  storage_image_reference {
-    publisher = "MicrosoftWindowsServer"
-    offer     = "WindowsServer"
-    sku       = "2019-Datacenter"
+  source_image_reference {
+    publisher = "Canonical"
+    offer     = "0001-com-ubuntu-server-jammy"
+    sku       = "22_04-lts"
     version   = "latest"
-  }
-  storage_os_disk {
-    name              = "myosdisk1"
-    caching           = "ReadWrite"
-    create_option     = "FromImage"
-    managed_disk_type = "StandardSSD_LRS"
-  }
-  os_profile {
-    computer_name  = "hostname"
-    admin_username = "testadmin"
-    admin_password = "Password1234!"
-  }
-
-# OS Profile Config for Windows
-
- os_profile_windows_config {
-    provision_vm_agent = true
-    enable_automatic_upgrades = true
-  }
-  
-#OS Configuration for Linux
-# Uncomment this block to configure Linux VM settings
-
-#   os_profile_linux_config {
-#     disable_password_authentication = false
-#   }
-  tags = {
-    environment = "Lab"
   }
 }
